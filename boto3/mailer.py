@@ -8,7 +8,7 @@ import os
 def send_individual_emails(subject, body, recipients, pdf_path=None):
     # Email settings
     sender_email = 'dasarepavan007@gmail.com'
-    sender_password = 'tiwp nqqz nwun bdif'  # Use App Password if 2-Step Verification is enabled
+    sender_password = 'app-password'  # Use App Password if 2-Step Verification is enabled
 
     # Create base HTML body template for beautification
     html_body_template = """<html>
