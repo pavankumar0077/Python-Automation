@@ -1,0 +1,35 @@
+# blue-green-deployment.yml
+---
+- name: Blue-Green Deployment
+  hosts: localhost
+  vars:
+    app_version: "{{ lookup('env', 'APP_VERSION') }}"
+    current_env: "{{ lookup('env', 'CURRENT_ENV') | default('blue') }}"
+    target_env: "{{ 'green' if current_env == 'blue' else 'blue' }}"
+
+  tasks:
+  - name: Deploy to target environment
+    include_tasks: deploy_app.yml
+    vars:
+      target_hosts: "{{ target_env }}_servers"
+
+  - name: Run health checks
+    uri:
+      url: "http://{{ item }}:8080/health"
+      method: GET
+      status_code: 200
+    loop: "{{ groups[target_env + '_servers'] }}"
+    retries: 5
+    delay: 10
+
+  - name: Switch load balancer
+    uri:
+      url: "http://load-balancer:8080/switch"
+      method: POST
+      body_format: json
+      body:
+        target_env: "{{ target_env }}"
+
+  - name: Update environment variable
+    set_fact:
+      new_current_env: "{{ target_env }}"

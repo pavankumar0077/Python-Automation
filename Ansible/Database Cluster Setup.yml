@@ -1,0 +1,38 @@
+# database-cluster.yml
+---
+- hosts: db_master
+  become: yes
+  vars:
+    mysql_root_password: "secure_password"
+    replication_user: "replicator"
+    replication_password: "repl_password"
+
+  tasks:
+  - name: Install MySQL
+    package:
+      name: mysql-server
+      state: present
+
+  - name: Configure MySQL for replication
+    template:
+      src: my.cnf.j2
+      dest: /etc/mysql/my.cnf
+    notify: restart mysql
+
+  - name: Create replication user
+    mysql_user:
+      name: "{{ replication_user }}"
+      password: "{{ replication_password }}"
+      priv: "*.*:REPLICATION SLAVE"
+      host: "%"
+      state: present
+
+- hosts: db_slaves
+  become: yes
+  tasks:
+  - name: Configure slave replication
+    mysql_replication:
+      mode: changemaster
+      master_host: "{{ hostvars[groups['db_master'][0]]['ansible_default_ipv4']['address'] }}"
+      master_user: "{{ replication_user }}"
+      master_password: "{{ replication_password }}"

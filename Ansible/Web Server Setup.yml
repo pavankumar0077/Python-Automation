@@ -1,0 +1,30 @@
+# webserver-playbook.yml
+---
+- hosts: webservers
+  become: yes
+  vars:
+    http_port: 80
+    max_clients: 200
+  
+  tasks:
+    - name: Install Apache
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - httpd
+        - mod_ssl
+    
+    - name: Start Apache service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+    
+    - name: Copy website files
+      copy:
+        src: /local/website/
+        dest: /var/www/html/
+        owner: apache
+        group: apache
+        mode: '0644'
